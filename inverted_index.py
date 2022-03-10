@@ -11,11 +11,19 @@ class InvertedIndex:
         self.keywords = self._extract(searchable_file_contents)
         self.index = self._invert(searchable_file_contents, self.keywords)
 
-    def search(self, keyword) -> tuple[str]:
-        if keyword not in self.keywords:
-            return tuple()
-        ids = self.index[keyword]
-        return tuple(self.file_names[doc_id] for doc_id in ids)
+    def search(self, query: str) -> set[str]:
+        terms: list[str] = self._parse(query)
+        if len(terms) == 1:
+            keyword: str = terms[0]
+            if keyword not in self.keywords:
+                return set()
+            ids = self.index[keyword]
+            return set(self.file_names[doc_id] for doc_id in ids)
+        else:
+            results: set[str] = set(self.file_names)
+            for keyword in terms:
+                results = results.intersection(self.search(keyword))
+            return results
 
     @staticmethod
     def _read() -> tuple[list[str], list[str]]:
@@ -32,14 +40,14 @@ class InvertedIndex:
         return documents, file_names
 
     @staticmethod
-    def _parse(document: str) -> list[str]:
+    def _parse(string: str) -> list[str]:
         # lowercase
-        document = document.lower()
+        string = string.lower()
         # without punctuation
         for punctuation in "!()-[]{};:, <>./?@#$%^&*_~'\"\\":
-            document = document.replace(punctuation, " ")
+            string = string.replace(punctuation, " ")
         # tokens
-        tokens = word_tokenize(document)
+        tokens = word_tokenize(string)
         # without stopwords
         tokens = [token for token in tokens if token not in stopwords.words()]
         return tokens
@@ -52,7 +60,10 @@ class InvertedIndex:
         return keywords
 
     @staticmethod
-    def _invert(documents: list[list[str]], keywords: set[str]) -> dict[str, tuple[int]]:
+    def _invert(
+        documents: list[list[str]],
+        keywords: set[str],
+    ) -> dict[str, tuple[int]]:
         return {
             keyword: tuple(
                 i for i, document in enumerate(documents) if (keyword in document)
@@ -62,8 +73,8 @@ class InvertedIndex:
 
 
 if __name__ == "__main__":
-    index = InvertedIndex()
-    print("chapter", index.search("chapter"))
-    print("even", index.search("even"))
-    print("xi", index.search("xi"))
-    print("expostulation", index.search("expostulation"))
+    raise NotImplementedError(
+        "This module is not intended to be run directly\n"
+        "If you wish to use it, import `InvertedIndex`\n"
+        "If you wish to test it, run `test_inverted_index.py`"
+    )

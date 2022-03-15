@@ -1,15 +1,25 @@
+import json
 from os import walk
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
+from utils import ReadUtils
+
 
 class InvertedIndex:
     def __init__(self):
-        file_contents, self.file_names = self._read()
-        searchable_file_contents = [self._parse(document) for document in file_contents]
-        self.keywords = self._extract(searchable_file_contents)
-        self.index = self._invert(searchable_file_contents, self.keywords)
+        self.documents = ReadUtils.read_messages_element()
+        searchable_documents: dict[str, list[str]] = {
+            document_id: self._parse(document_content)
+            for document_id, document_content in self.documents.items()
+        }
+        self.keywords = self._extract(searchable_documents)
+        self.index = self._invert(searchable_documents, self.keywords)
+        # TODO: This is temporary vvvvvvvvvv
+        with open("documents/index.json", mode="w", encoding="utf-8") as file:
+            json.dump(self.index, file)
+        # TODO: This is temporary ^^^^^^^^^
 
     def search(self, query: str) -> set[str]:
         terms: list[str] = self._parse(query)
@@ -18,9 +28,9 @@ class InvertedIndex:
             if keyword not in self.keywords:
                 return set()
             ids = self.index[keyword]
-            return set(self.file_names[doc_id] for doc_id in ids)
+            return set(ids)
         else:
-            results: set[str] = set(self.file_names)
+            results: set[str] = set(self.documents.keys())
             for keyword in terms:
                 results = results.intersection(self.search(keyword))
             return results
@@ -53,20 +63,22 @@ class InvertedIndex:
         return tokens
 
     @staticmethod
-    def _extract(documents: list[list[str]]) -> set[str]:
+    def _extract(documents: dict[str, list[str]]) -> set[str]:
         keywords: set[str] = set()
-        for document in documents:
+        for document in documents.values():
             keywords = keywords.union(set(document))
         return keywords
 
     @staticmethod
     def _invert(
-        documents: list[list[str]],
+        documents: dict[str, list[str]],
         keywords: set[str],
-    ) -> dict[str, tuple[int]]:
+    ) -> dict[str, tuple[str]]:
         return {
             keyword: tuple(
-                i for i, document in enumerate(documents) if (keyword in document)
+                document_id
+                for document_id, document_content in documents.items()
+                if (keyword in document_content)
             )
             for keyword in keywords
         }

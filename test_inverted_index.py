@@ -12,21 +12,34 @@ class TestInvertedIndex(unittest.TestCase):
 
     def test_keyword_search(self):
         self.assertEqual(
-            self.index.search("chapter"),
-            {"d.txt", "a.txt", "b.txt"},
+            {"$2qtvxQyjKj9Z4PftGuPNX1G-gBrYCDiXkBGuQNt6TAk"},
+            self.index.search("presumably"),
         )
         self.assertEqual(
-            self.index.search("even"),
-            {"d.txt", "a.txt", "b.txt", "f.txt"},
+            {
+                "$DjYYT7h9Tc0BD23r7HXE0bl8IzXtbr24Yp6Q1fFTubw",
+                "$EoHmLc15G6G834SRAT7k-mFFapLcWCoJXr1iUX6zWdA",
+            },
+            self.index.search("employee"),
         )
-        self.assertEqual(self.index.search("xi"), {"a.txt"})
-        self.assertEqual(self.index.search("expostulation"), {"d.txt"})
+        self.assertEqual(
+            self.index.search("discord"),
+            {
+                "$3aiTubd-TUMdw4WNpBI4qTXn8WhM0v7HEfxJILW0vrg",
+                "$xmPxf676bStqnUwCrM0L877v4kr3CRN5WaFPuzS1GI4",
+                "$5QypiKAFPA-GnLRvmm6boreYzYJ3pdzD702_28xAhn8",
+                "$ajBj2nDQIFh3Q0VYM6N1Re_C5zQklVCsGwAOzCVTlI4",
+            },
+        )
 
     def test_phrase_search(self):
-        self.assertEqual(self.index.search("chapter xix"), {"a.txt"})
         self.assertEqual(
-            self.index.search("even smaller"),
-            {"b.txt", "f.txt"},
+            self.index.search("mentors stretch"),
+            {"$4gwwUIaNRhdfcNx2auecdFDxY_clGoLRiiLsWwf0epU"},
+        )
+        self.assertEqual(
+            self.index.search("late reply"),
+            {"$H5GJ-YyrAvWGMYmTwgB0JUVAE0_bbIP6xATOszrxJHg"},
         )
 
 

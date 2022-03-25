@@ -8,10 +8,8 @@ class ReadUtils:
     def read_messages_element() -> dict[str, str]:
         events: list[dict[str, Any]] = []
         messages: dict[str, str] = {}
-        if path.exists("documents/export-gsoc-matrix-org.json"):
-            with open(
-                "documents/export-gsoc-matrix-org.json", encoding="utf-8"
-            ) as file:
+        if path.exists("documents/export.json"):
+            with open("documents/export.json", encoding="utf-8") as file:
                 events: list[dict[str, Any]] = json.load(file)["messages"]
         for event in events:
             if event["type"] == "m.room.message":

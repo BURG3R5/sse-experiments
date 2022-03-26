@@ -1,6 +1,6 @@
 import unittest
 
-from inverted_index import InvertedIndex
+from src.inverted_index import InvertedIndex
 
 
 class TestInvertedIndex(unittest.TestCase):
@@ -34,12 +34,12 @@ class TestInvertedIndex(unittest.TestCase):
 
     def test_phrase_search(self):
         self.assertEqual(
-            self.index.search("mentors stretch"),
             {"$4gwwUIaNRhdfcNx2auecdFDxY_clGoLRiiLsWwf0epU"},
+            self.index.search("mentors stretch"),
         )
         self.assertEqual(
-            self.index.search("late reply"),
             {"$H5GJ-YyrAvWGMYmTwgB0JUVAE0_bbIP6xATOszrxJHg"},
+            self.index.search("late reply"),
         )
 
 

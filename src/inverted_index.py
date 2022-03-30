@@ -86,6 +86,6 @@ class InvertedIndex:
 if __name__ == "__main__":
     raise NotImplementedError(
         "This module is not intended to be run directly\n"
-        "If you wish to use it, import `InvertedIndex`\n"
-        "If you wish to test it, run `test_inverted_index.py`"
+        "* If you wish to use it, import `InvertedIndex`\n"
+        "* If you wish to test it, run `test_inverted_index.py`"
     )

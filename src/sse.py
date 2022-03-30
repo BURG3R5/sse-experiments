@@ -2,15 +2,16 @@ import json
 from math import ceil, log
 from typing import Callable, Optional
 
-from inverted_index import InvertedIndex
+from src.inverted_index import InvertedIndex
 
-PARAM_s = 1
+PARAM_s = 4
 PARAM_L = 1
 
 
 class SSE:
     # Setup algorithm
     def __init__(self, debug: bool = False):
+        self.debug = debug
         self.inverted_index = InvertedIndex(debug=True)  # 0
         # TODO: Get keys  # 1
         self._calculate_params()  # 2
@@ -24,11 +25,13 @@ class SSE:
     # Setup algorithm sub-methods
     def _calculate_params(self):
         self.N = sum(len(arr) for arr in self.inverted_index.index.values())
-        first_level = ceil(log(self.N))
+        first_level = ceil(log(self.N, 2))
         p = ceil(first_level / PARAM_s)
-        self.levels = [first_level - p * i for i in range(PARAM_s)]
+        self.levels = [first_level - p * i for i in range(PARAM_s - 1, -1, -1)]
         if PARAM_L > 1:
             self.levels.insert(0, 0)
+        if self.debug:
+            print(f"N: {self.N}\n" f"levels: {self.levels}")
         # Some utility shortcuts
         self.array_size: Callable[[int], int] = lambda i: 2 * (self.N + 2**i)
         self.large_bucket_size: Callable[[int], int] = lambda i: 2 ** (i + 1)
@@ -58,9 +61,9 @@ class SSE:
             upper_level_index = min(
                 index for index, level in enumerate(self.levels) if level >= bound
             )
-            level_index: int = self.levels[upper_level_index]
+            level: int = self.levels[upper_level_index]
             # 10
-            large_chunk_size = 2**level_index
+            large_chunk_size = 2**level
             number_of_large_chunks, small_chunk_size = divmod(
                 number_of_documents_containing_keyword,
                 large_chunk_size,
@@ -71,83 +74,101 @@ class SSE:
                 # TODO: Randomize selection of buckets
                 # 14
                 first_empty_bucket_index: Optional[int] = None
-                for bucket_index in range(self.number_of_buckets(level_index)):
+                for bucket_index in range(self.number_of_buckets(level)):
                     # For small bucket
                     if (
-                        self.small_bucket_size != 0
-                        and bucket_index == self.number_of_buckets(level_index) - 1
+                        self.small_bucket_size(level) != 0
+                        and bucket_index == self.number_of_buckets(level) - 1
                     ):
+                        level_index = self.levels.index(level)
                         if (
-                            self.small_bucket_size(level_index)
+                            self.small_bucket_size(level)
                             - len(self.arrays[level_index][-1])
-                            <= large_chunk_size
+                            >= large_chunk_size
                         ):
                             first_empty_bucket_index = bucket_index
                             break
                     # For large buckets
                     else:
+                        level_index = self.levels.index(level)
                         if (
-                            self.large_bucket_size(level_index)
+                            self.large_bucket_size(level)
                             - len(self.arrays[level_index][bucket_index])
-                            <= large_chunk_size
+                            >= large_chunk_size
                         ):
                             first_empty_bucket_index = bucket_index
                             break
                 # 15
                 if first_empty_bucket_index is not None:
+                    level_index = self.levels.index(level)
                     self.arrays[level_index][first_empty_bucket_index].append(
                         documents_containing_keyword[
                             count * large_chunk_size : (count + 1) * large_chunk_size
                         ]
                     )
                 else:
-                    raise IndexError("Chunk did not fit in any bucket")
+                    raise IndexError(
+                        "Chunk did not fit in any bucket\n"
+                        f"Chunk size: {small_chunk_size}, "
+                        f"Level: {level}, "
+                        f"Bucket sizes: ({self.large_bucket_size(level)} "
+                        f"& {self.small_bucket_size(level)})"
+                    )
                 # 16
                 # TODO: Encrypt key & value before adding to table
                 key = keyword
-                value = (level_index, first_empty_bucket_index)
+                value = (level, first_empty_bucket_index)
                 self.hash_table[key] = value
             # 11 - 16 for last (small) chunk
             # 11 - 13
             if small_chunk_size != 0:
                 # 14
                 first_empty_bucket_index: Optional[int] = None
-                for bucket_index in range(self.number_of_buckets(level_index)):
+                for bucket_index in range(self.number_of_buckets(level)):
                     # For small bucket
                     if (
-                        self.small_bucket_size != 0
-                        and bucket_index == self.number_of_buckets(level_index) - 1
+                        self.small_bucket_size(level) != 0
+                        and bucket_index == self.number_of_buckets(level) - 1
                     ):
+                        level_index = self.levels.index(level)
                         if (
-                            self.small_bucket_size(level_index)
+                            self.small_bucket_size(level)
                             - len(self.arrays[level_index][-1])
-                            <= small_chunk_size
+                            >= small_chunk_size
                         ):
                             first_empty_bucket_index = bucket_index
                             break
                     # For large buckets
                     else:
+                        level_index = self.levels.index(level)
                         if (
-                            self.large_bucket_size(level_index)
+                            self.large_bucket_size(level)
                             - len(self.arrays[level_index][bucket_index])
-                            <= small_chunk_size
+                            >= small_chunk_size
                         ):
                             first_empty_bucket_index = bucket_index
                             break
                 # 15
+                level_index = self.levels.index(level)
                 if first_empty_bucket_index is not None:
                     self.arrays[level_index][first_empty_bucket_index].append(
                         documents_containing_keyword[-small_chunk_size:]
                     )
                 else:
-                    raise IndexError("Chunk did not fit in any bucket")
+                    raise IndexError(
+                        "Chunk did not fit in any bucket\n"
+                        f"Chunk size: {small_chunk_size}, "
+                        f"Level: {level}, "
+                        f"Bucket sizes: ({self.large_bucket_size(level)} "
+                        f"& {self.small_bucket_size(level)})"
+                    )
 
                 # 16
                 # TODO: Encrypt key & value before adding to table
                 key = keyword
-                value = (level_index, first_empty_bucket_index)
+                value = (level, first_empty_bucket_index)
                 self.hash_table[key] = value
-            return
+        return
 
     def _store_hash_table_and_arrays(self):
         with open("documents/arrays.json", mode="w", encoding="utf-8") as file:
@@ -176,6 +197,6 @@ class SSE:
 if __name__ == "__main__":
     raise NotImplementedError(
         "This module is not intended to be run directly\n"
-        "If you wish to use it, import `InvertedIndex`\n"
-        "If you wish to test it, run `test_inverted_index.py`"
+        "* If you wish to use it, import `SSE`\n"
+        "* If you wish to test it, run `test_sse.py`"
     )

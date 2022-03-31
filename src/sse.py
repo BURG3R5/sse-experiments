@@ -101,11 +101,12 @@ class SSE:
                 # 15
                 if first_empty_bucket_index is not None:
                     level_index = self.levels.index(level)
-                    self.arrays[level_index][first_empty_bucket_index].append(
-                        documents_containing_keyword[
+                    self.arrays[level_index][first_empty_bucket_index] += [
+                        (doc, keyword)
+                        for doc in documents_containing_keyword[
                             count * large_chunk_size : (count + 1) * large_chunk_size
                         ]
-                    )
+                    ]
                 else:
                     raise IndexError(
                         "Chunk did not fit in any bucket\n"
@@ -151,9 +152,10 @@ class SSE:
                 # 15
                 level_index = self.levels.index(level)
                 if first_empty_bucket_index is not None:
-                    self.arrays[level_index][first_empty_bucket_index].append(
-                        documents_containing_keyword[-small_chunk_size:]
-                    )
+                    self.arrays[level_index][first_empty_bucket_index] += [
+                        (doc, keyword)
+                        for doc in documents_containing_keyword[-small_chunk_size:]
+                    ]
                 else:
                     raise IndexError(
                         "Chunk did not fit in any bucket\n"
@@ -168,7 +170,6 @@ class SSE:
                 key = keyword
                 value = (level, first_empty_bucket_index)
                 self.hash_table[key] = value
-        return
 
     def _store_hash_table_and_arrays(self):
         with open("documents/arrays.json", mode="w", encoding="utf-8") as file:
@@ -190,8 +191,29 @@ class SSE:
     def token(self):
         raise NotImplementedError()
 
-    def search(self):
-        raise NotImplementedError()
+    # Search algorithm
+    def search(self, query: str) -> list:
+        result = []
+        # TODO: Will have to modify this if and when arrays and hash_table are encrypted.
+        # 3 - 4
+        try:
+            location = self.hash_table[query]
+            try:
+                level, bucket_index = location
+                level_index = self.levels.index(level)
+                bucket = self.arrays[level_index][bucket_index]
+                result += [entry[0] for entry in bucket if entry[1] == query]
+            except TypeError:
+                # If `location` is not of the correct form, the data is incorrectly stored.
+                raise TypeError(
+                    f"`location` is not of the correct type.\n"
+                    f"Expected: tuple[int, int]\n"
+                    f"Got: {type(location)}"
+                )
+        except KeyError:
+            # If `query` is not found in `hash_table`, just return an empty set.
+            pass
+        return result
 
 
 if __name__ == "__main__":

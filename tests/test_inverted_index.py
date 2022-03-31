@@ -23,13 +23,13 @@ class TestInvertedIndex(unittest.TestCase):
             self.index.search("employee"),
         )
         self.assertEqual(
-            self.index.search("discord"),
             {
                 "$3aiTubd-TUMdw4WNpBI4qTXn8WhM0v7HEfxJILW0vrg",
                 "$xmPxf676bStqnUwCrM0L877v4kr3CRN5WaFPuzS1GI4",
                 "$5QypiKAFPA-GnLRvmm6boreYzYJ3pdzD702_28xAhn8",
                 "$ajBj2nDQIFh3Q0VYM6N1Re_C5zQklVCsGwAOzCVTlI4",
             },
+            self.index.search("discord"),
         )
 
     def test_phrase_search(self):

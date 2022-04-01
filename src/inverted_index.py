@@ -1,17 +1,14 @@
 import json
 from os import walk
 
-from nltk import word_tokenize
-from nltk.corpus import stopwords
-
-from utils import ReadUtils
+from utils import ParseUtils, ReadUtils
 
 
 class InvertedIndex:
     def __init__(self, debug: bool = False):
         self.documents = ReadUtils.read_messages_element()
         searchable_documents: dict[str, list[str]] = {
-            document_id: self._parse(document_content)
+            document_id: ParseUtils.parse(document_content)
             for document_id, document_content in self.documents.items()
         }
         self.keywords = self._extract(searchable_documents)
@@ -21,7 +18,7 @@ class InvertedIndex:
                 json.dump(self.index, file)
 
     def search(self, query: str) -> set[str]:
-        terms: list[str] = self._parse(query)
+        terms: list[str] = ParseUtils.parse(query)
         if len(terms) == 1:
             keyword: str = terms[0]
             if keyword not in self.keywords:
@@ -47,19 +44,6 @@ class InvertedIndex:
                 for line in file:
                     documents[-1] += line
         return documents, file_names
-
-    @staticmethod
-    def _parse(string: str) -> list[str]:
-        # lowercase
-        string = string.lower()
-        # without punctuation
-        for punctuation in "!()-[]{};:, <>./?@#$%^&*_~'\"\\":
-            string = string.replace(punctuation, " ")
-        # tokens
-        tokens = word_tokenize(string)
-        # without stopwords
-        tokens = [token for token in tokens if token not in stopwords.words()]
-        return tokens
 
     @staticmethod
     def _extract(documents: dict[str, list[str]]) -> set[str]:

@@ -3,6 +3,7 @@ from math import ceil, log
 from typing import Callable, Optional
 
 from src.inverted_index import InvertedIndex
+from utils.parse_utils import ParseUtils
 
 PARAM_s = 4
 PARAM_L = 1
@@ -192,28 +193,35 @@ class SSE:
         raise NotImplementedError()
 
     # Search algorithm
-    def search(self, query: str) -> list:
-        result = []
-        # TODO: Will have to modify this if and when arrays and hash_table are encrypted.
-        # 3 - 4
-        try:
-            location = self.hash_table[query]
+    def search(self, query: str) -> set:
+        terms: list[str] = ParseUtils.parse(query)
+        if len(terms) == 1:
+            result = []
+            # TODO: Will have to modify this if and when arrays and hash_table are encrypted.
+            # 3 - 4
             try:
-                level, bucket_index = location
-                level_index = self.levels.index(level)
-                bucket = self.arrays[level_index][bucket_index]
-                result += [entry[0] for entry in bucket if entry[1] == query]
-            except TypeError:
-                # If `location` is not of the correct form, the data is incorrectly stored.
-                raise TypeError(
-                    f"`location` is not of the correct type.\n"
-                    f"Expected: tuple[int, int]\n"
-                    f"Got: {type(location)}"
-                )
-        except KeyError:
-            # If `query` is not found in `hash_table`, just return an empty set.
-            pass
-        return result
+                location = self.hash_table[query]
+                try:
+                    level, bucket_index = location
+                    level_index = self.levels.index(level)
+                    bucket = self.arrays[level_index][bucket_index]
+                    result += [entry[0] for entry in bucket if entry[1] == query]
+                except TypeError:
+                    # If `location` is not of the correct form, the data is incorrectly stored.
+                    raise TypeError(
+                        f"`location` is not of the correct type.\n"
+                        f"Expected: tuple[int, int]\n"
+                        f"Got: {type(location)}"
+                    )
+            except KeyError:
+                # If `query` is not found in `hash_table`, just return an empty set.
+                pass
+            return set(result)
+        else:
+            results: set[str] = self.search(terms[0])
+            for keyword in terms[1:]:
+                results = results.intersection(self.search(keyword))
+            return results
 
 
 if __name__ == "__main__":
